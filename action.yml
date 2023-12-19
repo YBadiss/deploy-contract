@@ -1,0 +1,95 @@
+name: "Deploy smart contract"
+description: "Deploy smart contract"
+
+inputs:
+  contract-name:
+    description: "Name of the contract to deploy. Must be the name of the main sol file."
+    required: true
+  parent-dir:
+    description: "Parent directory of `src` and `out`."
+    required: true
+    default: "."
+  chain-id:
+    description: "ID of the chain to deploy to. If in doubt see https://chainlist.org/."
+    required: true
+  rpc-url:
+    description: "URL of the RPC to use to deploy the contract."
+    required: true
+  deployer-pk:
+    description: "Private key to use for deployment."
+    required: true
+  constructor-args:
+    description: "Arguments to pass to the contract's constructor."
+    required: false
+    default: ""
+  verify:
+    description: "Whether we must verify the contract or not on etherscan. If set to `true`, `etherscan-url` and `etherscan-api-key` are required."
+    required: false
+    default: "false"
+  etherscan-url:
+    description: "URL of the etherscan endpoint to use for verification and reporting."
+    required: false
+    default: ""
+  etherscan-api-key:
+    description: "API key used for verification."
+    required: false
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+    - name: Check values
+      run: |
+        if [[ "${{ inputs.verify }}" == "true" ]]; then
+          if [[ "${{ inputs.etherscan-url }}" == "" || "${{ inputs.etherscan-api-key }}" == "" ]]; then
+            echo "Missing `etherscan-url` and `etherscan-api-key` required for verification."
+            exit 1
+          fi
+        fi
+      shell: bash
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+    - name: Build contract
+      run: |
+        cd ${{ inputs.parent-dir }}
+        forge build
+      shell: bash
+    - name: Deploy contract
+      id: deploy
+      env:
+        ETHERSCAN_URL: ${{ inputs.etherscan-url }}
+        ETHERSCAN_API_KEY: ${{ inputs.etherscan-api-key }}
+      run: |
+        cd ${{ inputs.parent-dir }}
+        createArguments="'src/${{ inputs.contract-name }}.sol:${{ inputs.contract-name }}' --json --rpc-url=${{ inputs.rpc-url }} --private-key=${{ inputs.deployer-pk }}"
+        if [[ "${{ inputs.verify }}" == "true" ]]; then
+          createArguments="${createArguments} --verify"
+        fi
+        if [[ "${{ inputs.constructor-args }}" != "" ]]; then
+          createArguments="${createArguments} --constructor-args ${{ inputs.constructor-args }}"
+        fi
+        createOutput=`forge create ${createArguments}`
+        echo "forge create output:\n\n${createOutput}"
+        deploymentOutput=`echo "${createOutput}" | head -1`
+        echo "deploymentOutput=$deploymentOutput" >> $GITHUB_OUTPUT
+      shell: bash
+    - name: Upload ABI artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ inputs.contract-name }}.abi.json
+        path: ${{ inputs.parent-dir }}/out/${{ inputs.contract-name }}.sol/${{ inputs.contract-name }}.json
+    - name: Log detail of deployment
+      run: |
+        echo "# Contract ${{ inputs.contract-name }} deployed :rocket:" >> $GITHUB_STEP_SUMMARY
+        deployer="${{ fromJson(steps.deploy.outputs.deploymentOutput).deployer }}"
+        deployedTo="${{ fromJson(steps.deploy.outputs.deploymentOutput).deployedTo }}"
+        transactionHash="${{ fromJson(steps.deploy.outputs.deploymentOutput).transactionHash }}"
+        if [[ "${{ inputs.etherscan-url }}" != "" ]]; then
+          deployer="[${deployer}}](${{ inputs.etherscan-url }}/address/${deployer})"
+          deployedTo="[${deployedTo}](${{ inputs.etherscan-url }}/address/${deployedTo})"
+          transactionHash="[${transactionHash}](${{ inputs.etherscan-url }}/tx/${transactionHash})"
+        fi
+        echo "- Deployer: ${deployer}" >> $GITHUB_STEP_SUMMARY
+        echo "- Deployed to: ${deployedTo}" >> $GITHUB_STEP_SUMMARY
+        echo "- Transaction hash: ${transactionHash}" >> $GITHUB_STEP_SUMMARY
+      shell: bash
