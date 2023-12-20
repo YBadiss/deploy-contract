@@ -1,5 +1,9 @@
 name: "Deploy EVM smart contract"
 description: "Deploy and verify a smart contract on any EVM chain"
+author: "Yacine Badiss"
+branding:
+  icon: arrow-up-circle
+  color: blue
 
 inputs:
   contract-name:
