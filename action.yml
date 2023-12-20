@@ -1,5 +1,5 @@
-name: "Deploy smart contract"
-description: "Deploy smart contract"
+name: "Deploy EVM smart contract"
+description: "Deploy and verify a smart contract on any EVM chain"
 
 inputs:
   contract-name:
