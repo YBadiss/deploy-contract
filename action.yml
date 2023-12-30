@@ -65,7 +65,7 @@ runs:
         ETHERSCAN_API_KEY: ${{ inputs.etherscan-api-key }}
       run: |
         cd ${{ inputs.parent-dir }}
-        createArguments="'src/${{ inputs.contract-name }}.sol:${{ inputs.contract-name }}' --json --rpc-url=${{ inputs.rpc-url }} --private-key=${{ inputs.deployer-pk }}"
+        createArguments="src/${{ inputs.contract-name }}.sol:${{ inputs.contract-name }} --json --rpc-url=${{ inputs.rpc-url }} --private-key=${{ inputs.deployer-pk }}"
         if [[ "${{ inputs.verify }}" == "true" ]]; then
           createArguments="${createArguments} --verify"
         fi
