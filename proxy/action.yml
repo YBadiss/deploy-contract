@@ -17,14 +17,14 @@ inputs:
     description: "Address of the proxy contract."
     required: false
     default: ""
+  call-args:
+    description: "Arguments to initialise the implementation contract with, or pass to upgradeAndCall."
+    required: false
+    default: ""
   parent-dir:
     description: "Parent directory of `src` and `out`."
     required: true
     default: "."
-  initialiser-args:
-    description: "Arguments to pass to the implementation contract's initialiser."
-    required: false
-    default: ""
   deployer-pk:
     description: "Private key to use for deployment."
     required: true
@@ -73,9 +73,9 @@ runs:
       shell: bash
     - name: Install Foundry
       uses: foundry-rs/foundry-toolchain@v1
-    - name: ABI encode the initialiser args
+    - name: ABI encode the call args
       id: encode
-      run: echo "args=$(cast abi-encode ${{ inputs.initialiser-args }})" >> $GITHUB_OUTPUT
+      run: echo "call-args=$(cast abi-encode ${{ inputs.call-args }})" >> $GITHUB_OUTPUT
       shell: bash
     - name: Deploy implementation contract
       uses: YBadiss/deploy-contract@v1
@@ -96,7 +96,7 @@ runs:
       with:
         contract-name: ${{ inputs.proxy-contract-name }}
         parent-dir: ${{ inputs.parent-dir }}
-        constructor-args: '${{ steps.deploy-implementation.outputs.contract-address }} ${{ steps.encode.outputs.args }}'
+        constructor-args: '${{ steps.deploy-implementation.outputs.contract-address }} ${{ steps.encode.outputs.call-args }}'
         deployer-pk: ${{ inputs.deployer-pk }}
         chain-id: ${{ inputs.chain-id }}
         rpc-url: ${{ inputs.rpc-url }}
@@ -111,7 +111,7 @@ runs:
           ${{ inputs.proxy-contract-address }} \
           "upgradeToAndCall(address,bytes)" \
           ${{ steps.deploy-implementation.outputs.contract-address }} \
-          "${{ steps.encode.outputs.args }}" \
+          "${{ steps.encode.outputs.call-args }}" \
           --private-key ${{ inputs.deployer-pk }} \
           --gas-price 100gwei \
           --rpc-url ${{ inputs.rpc-url }}

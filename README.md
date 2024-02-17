@@ -57,6 +57,7 @@ jobs:
         with:
           implementation-contract-name: 'ImplementationContractName'
           proxy-contract-name: 'ProxyContractName'
+          call-args: '"initialize(address)" "${{ vars.OWNER_ADDRESS }}"'
           parent-dir: './path/to/contracts'
           deployer-pk: ${{ secrets.DEPLOYER_PK }}
           chain-id: '11155111'
@@ -70,6 +71,7 @@ jobs:
         with:
           implementation-contract-name: 'NewImplementationContractName'
           proxy-contract-address: ${{ steps.deploy.outputs.proxy-contract-address }}
+          call-args: ''
           parent-dir: './path/to/contracts'
           deployer-pk: ${{ secrets.DEPLOYER_PK }}
           chain-id: '11155111'
@@ -186,6 +188,15 @@ Address of the proxy contract.
 
 - `OPTIONAL, DEFAULT=""`
 
+### call-args
+
+Arguments to initialise the implementation contract with, or pass to upgradeAndCall.
+
+- In the case of a new deployment, provide the initialiser's function and args.
+- In the case of an upgrade, provide the optional call's function and args.
+
+- `OPTIONAL, DEFAULT=""`
+
 ### chain-id
 
 ID of the chain to deploy to. If in doubt see https://chainlist.org/.
@@ -211,12 +222,6 @@ Private key to use for deployment, in hex format.
 Parent directory of `src` and `out`.
 
 - `OPTIONAL, DEFAULT="."`
-
-### constructor-args
-
-Arguments to pass to the contract's constructor.
-
-- `OPTIONAL, DEFAULT=""`
 
 ### verify
 
