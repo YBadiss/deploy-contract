@@ -101,7 +101,7 @@ runs:
         transactionHash="${{ fromJson(steps.deploy.outputs.deploymentOutput).transactionHash }}"
         echo "transactionHash=${transactionHash}" >> $GITHUB_OUTPUT
         if [[ "${{ inputs.etherscan-url }}" != "" ]]; then
-          deployer="[${deployer}}](${{ inputs.etherscan-url }}/address/${deployer})"
+          deployer="[${deployer}](${{ inputs.etherscan-url }}/address/${deployer})"
           deployedTo="[${deployedTo}](${{ inputs.etherscan-url }}/address/${deployedTo})"
           transactionHash="[${transactionHash}](${{ inputs.etherscan-url }}/tx/${transactionHash})"
         fi
