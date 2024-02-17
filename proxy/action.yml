@@ -75,7 +75,10 @@ runs:
       uses: foundry-rs/foundry-toolchain@v1
     - name: ABI encode the call args
       id: encode
-      run: echo "call-args=$(cast calldata ${{ inputs.call-args }})" >> $GITHUB_OUTPUT
+      run: |
+        if [[ '${{ inputs.call-args }}' != "" ]]; then
+          echo "call-args=$(cast calldata ${{ inputs.call-args }})" >> $GITHUB_OUTPUT
+        fi
       shell: bash
     - name: Deploy implementation contract
       uses: YBadiss/deploy-contract@v2
