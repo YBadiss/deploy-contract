@@ -128,8 +128,23 @@ runs:
     - name: Set outputs
       id: summary
       run: |
+        transaction_hash="${{ steps.deploy-proxy.outputs.transaction-hash || fromJson(steps.upgrade-implementation.outputs.transaction-receipt).transactionHash }}"
+        if [[ "${{ inputs.proxy-contract-address }}" != "" ]]; then
+          echo "# Implementation of ${{ inputs.implementation-contract-name }} upgraged :rocket:" >> $GITHUB_STEP_SUMMARY
+          proxy="${{ inputs.proxy-contract-address }}"
+          implementation="${{ steps.deploy-implementation.outputs.contract-address }}"
+          if [[ "${{ inputs.etherscan-url }}" != "" ]]; then
+            proxy="[${proxy}](${{ inputs.etherscan-url }}/address/${proxy})"
+            implementation="[${implementation}](${{ inputs.etherscan-url }}/address/${implementation})"
+            transaction_hash="[${transaction_hash}](${{ inputs.etherscan-url }}/tx/${transaction_hash})"
+          fi
+          echo "- New implementation: ${implementation}" >> $GITHUB_STEP_SUMMARY
+          echo "- Proxy: ${proxy}" >> $GITHUB_STEP_SUMMARY
+          echo "- Transaction hash: ${transaction_hash}" >> $GITHUB_STEP_SUMMARY
+        fi
+
         echo "implementation-contract-address=${{ steps.deploy-implementation.outputs.contract-address }}" >> $GITHUB_OUTPUT
         echo "implementation-transaction-hash=${{ steps.deploy-implementation.outputs.transaction-hash }}" >> $GITHUB_OUTPUT
         echo "proxy-contract-address=${{ inputs.proxy-contract-address || steps.deploy-proxy.outputs.contract-address }}" >> $GITHUB_OUTPUT
-        echo "proxy-transaction-hash=${{ steps.deploy-proxy.outputs.transaction-hash || fromJson(steps.upgrade-implementation.outputs.transaction-receipt).transactionHash }}" >> $GITHUB_OUTPUT
+        echo "proxy-transaction-hash=${transaction_hash}" >> $GITHUB_OUTPUT
       shell: bash
