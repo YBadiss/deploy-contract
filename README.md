@@ -25,7 +25,7 @@ jobs:
     permissions: write-all
     steps:
       - uses: actions/checkout@v4
-      - uses: YBadiss/deploy-contract@v1
+      - uses: YBadiss/deploy-contract@v2
         with:
           contract-name: 'OwnableContractName'
           parent-dir: './path/to/contracts'
@@ -52,7 +52,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Deploy an implementation and its proxy
-        uses: YBadiss/deploy-contract/proxy@v1
+        uses: YBadiss/deploy-contract/proxy@v2
         id: deploy
         with:
           implementation-contract-name: 'ImplementationContractName'
@@ -66,7 +66,7 @@ jobs:
           etherscan-url: 'https://sepolia.etherscan.io'
           etherscan-api-key: ${{ secrets.ETHERSCAN_SEPOLIA_API_KEY }}
       - name: Upgrade to a new implementation
-        uses: YBadiss/deploy-contract/proxy@v1
+        uses: YBadiss/deploy-contract/proxy@v2
         id: upgrade
         with:
           implementation-contract-name: 'NewImplementationContractName'

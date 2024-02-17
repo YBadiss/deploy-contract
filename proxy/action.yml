@@ -78,7 +78,7 @@ runs:
       run: echo "call-args=$(cast calldata ${{ inputs.call-args }})" >> $GITHUB_OUTPUT
       shell: bash
     - name: Deploy implementation contract
-      uses: YBadiss/deploy-contract@main
+      uses: YBadiss/deploy-contract@v2
       id: deploy-implementation
       with:
         contract-name: ${{ inputs.implementation-contract-name }}
@@ -91,7 +91,7 @@ runs:
         etherscan-api-key: ${{ inputs.etherscan-api-key }}
     - name: Deploy proxy contract
       if: inputs.proxy-contract-address == ''
-      uses: YBadiss/deploy-contract@main
+      uses: YBadiss/deploy-contract@v2
       id: deploy-proxy
       with:
         contract-name: ${{ inputs.proxy-contract-name }}
