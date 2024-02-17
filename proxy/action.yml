@@ -1,0 +1,127 @@
+name: "Deploy proxied smart contract"
+description: "Deploy and verify a proxied smart contract on any EVM chain"
+author: "Yacine Badiss"
+branding:
+  icon: arrow-up-circle
+  color: blue
+
+inputs:
+  implementation-contract-name:
+    description: "Name of the implementation to deploy. Must be the name of the main sol file."
+    required: true
+  proxy-contract-name:
+    description: "Name of the proxy to deploy. Must be the name of the main sol file."
+    required: false
+    default: ""
+  proxy-contract-address:
+    description: "Address of the proxy contract."
+    required: false
+    default: ""
+  parent-dir:
+    description: "Parent directory of `src` and `out`."
+    required: true
+    default: "."
+  initialiser-args:
+    description: "Arguments to pass to the implementation contract's initialiser."
+    required: false
+    default: ""
+  deployer-pk:
+    description: "Private key to use for deployment."
+    required: true
+  chain-id:
+    description: "ID of the chain to deploy to. If in doubt see https://chainlist.org/."
+    required: true
+  rpc-url:
+    description: "URL of the RPC to use to deploy the contract."
+    required: true
+  verify:
+    description: "Whether we must verify the contract or not on etherscan. If set to `true`, `etherscan-url` and `etherscan-api-key` are required."
+    required: false
+    default: "false"
+  etherscan-url:
+    description: "URL of the etherscan endpoint to use for verification and reporting."
+    required: false
+    default: ""
+  etherscan-api-key:
+    description: "API key used for verification."
+    required: false
+    default: ""
+outputs:
+  implementation-contract-address:
+    description: "Address of the implementation contract"
+    value: ${{ fromJson(steps.deploy.outputs.deploymentOutput).deployedTo }}
+  implementation-transaction-hash:
+    description: "Hash of the transaction of the implementation contract's deployment"
+    value: ${{ fromJson(steps.deploy.outputs.deploymentOutput).transactionHash }}
+  proxy-contract-address:
+    description: "Address of the proxy contract"
+    value: ${{ fromJson(steps.deploy.outputs.deploymentOutput).transactionHash }}
+  proxy-transaction-hash:
+    description: "Hash of the transaction of the implementation upgrade call"
+    value: ${{ fromJson(steps.deploy.outputs.deploymentOutput).transactionHash }}
+
+
+runs:
+  using: "composite"
+  steps:
+    - name: Check values
+      run: |
+        if [[ "${{ inputs.proxy-contract-name }}" == "" && "${{ inputs.proxy-contract-address }}" == "" ]]; then
+          echo "You must provide either `proxy-contract-name` to deploy, or `proxy-contract-address` of an already deployed contract."
+          exit 1
+        fi
+      shell: bash
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+    - name: ABI encode the initialiser args
+      id: encode
+      run: echo "args=$(cast abi-encode ${{ inputs.initialiser-args }})" >> $GITHUB_OUTPUT
+      shell: bash
+    - name: Deploy implementation contract
+      uses: YBadiss/deploy-contract@v1
+      id: deploy-implementation
+      with:
+        contract-name: ${{ inputs.implementation-contract-name }}
+        parent-dir: ${{ inputs.parent-dir }}
+        deployer-pk: ${{ inputs.deployer-pk }}
+        chain-id: ${{ inputs.chain-id }}
+        rpc-url: ${{ inputs.rpc-url }}
+        verify: ${{ inputs.verify }}
+        etherscan-url: ${{ inputs.etherscan-url }}
+        etherscan-api-key: ${{ inputs.etherscan-api-key }}
+    - name: Deploy proxy contract
+      if: inputs.proxy-contract-address == ''
+      uses: YBadiss/deploy-contract@v1
+      id: deploy-proxy
+      with:
+        contract-name: ${{ inputs.proxy-contract-name }}
+        parent-dir: ${{ inputs.parent-dir }}
+        constructor-args: '${{ steps.deploy-implementation.outputs.contract-address }} ${{ steps.encode.outputs.args }}'
+        deployer-pk: ${{ inputs.deployer-pk }}
+        chain-id: ${{ inputs.chain-id }}
+        rpc-url: ${{ inputs.rpc-url }}
+        verify: ${{ inputs.verify }}
+        etherscan-url: ${{ inputs.etherscan-url }}
+        etherscan-api-key: ${{ inputs.etherscan-api-key }}
+    - name: Upgrade implementation
+      if: inputs.proxy-contract-address != ''
+      id: upgrade-implementation
+      run: |
+        tx_receipt=$(cast send \
+          ${{ inputs.proxy-contract-address }} \
+          "upgradeToAndCall(address,bytes)" \
+          ${{ steps.deploy-implementation.outputs.contract-address }} \
+          "${{ steps.encode.outputs.args }}" \
+          --private-key ${{ inputs.deployer-pk }} \
+          --gas-price 100gwei \
+          --rpc-url ${{ inputs.rpc-url }}
+          --json)
+        echo "transaction-receipt=$(tx_receipt)" >> $GITHUB_OUTPUT
+      shell: bash
+    - name: Set outputs
+      run: |
+        echo "implementation-contract-address=${{ steps.deploy-implementation.outputs.contract-address }}" >> $GITHUB_OUTPUT
+        echo "implementation-transaction-hash=${{ steps.deploy-implementation.outputs.transaction-hash }}" >> $GITHUB_OUTPUT
+        echo "proxy-contract-address=${{ inputs.proxy-contract-address || steps.deploy-proxy.outputs.contract-address }}" >> $GITHUB_OUTPUT
+        echo "proxy-transaction-hash=${{ steps.deploy-proxy.outputs.transaction-hash || fromJson(steps.upgrade-implementation.outputs.transaction-receipt).transactionHash }}" >> $GITHUB_OUTPUT
+      shell: bash

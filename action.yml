@@ -38,6 +38,14 @@ inputs:
     description: "API key used for verification."
     required: false
     default: ""
+outputs:
+  contract-address:
+    description: "Address the contract was deployed to"
+    value: ${{ fromJson(steps.deploy.outputs.deploymentOutput).deployedTo }}
+  transaction-hash:
+    description: "Hash of the deployment transaction"
+    value: ${{ fromJson(steps.deploy.outputs.deploymentOutput).transactionHash }}
+
 
 runs:
   using: "composite"
