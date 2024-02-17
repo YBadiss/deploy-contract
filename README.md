@@ -197,6 +197,20 @@ Arguments to initialise the implementation contract with, or pass to upgradeAndC
 
 - `OPTIONAL, DEFAULT=""`
 
+### deployer-pk
+
+Private key to use for deployment, in hex format.
+
+- `REQUIRED`
+- :warning: Use github secrets.
+
+### owner-pk
+
+Private key to use for changes only the owner can do.
+
+- `OPTIONAL, DEFAULT=""`
+- :warning: Use github secrets.
+
 ### chain-id
 
 ID of the chain to deploy to. If in doubt see https://chainlist.org/.
@@ -209,13 +223,6 @@ URL of the RPC to use to deploy the contract.
 
 - `REQUIRED`
 - :warning: Use github secrets if the URL embeds an API Key.
-
-### deployer-pk
-
-Private key to use for deployment, in hex format.
-
-- `REQUIRED`
-- :warning: Use github secrets.
 
 ### parent-dir
 

@@ -21,13 +21,17 @@ inputs:
     description: "Arguments to initialise the implementation contract with, or pass to upgradeAndCall."
     required: false
     default: ""
+  deployer-pk:
+    description: "Private key to use for deployment."
+    required: true
+  owner-pk:
+    description: "Private key to use for changes only the owner can do."
+    required: false
+    default: ""
   parent-dir:
     description: "Parent directory of `src` and `out`."
     required: true
     default: "."
-  deployer-pk:
-    description: "Private key to use for deployment."
-    required: true
   chain-id:
     description: "ID of the chain to deploy to. If in doubt see https://chainlist.org/."
     required: true
@@ -115,11 +119,11 @@ runs:
           "upgradeToAndCall(address,bytes)" \
           ${{ steps.deploy-implementation.outputs.contract-address }} \
           "${{ steps.encode.outputs.call-args }}" \
-          --private-key ${{ inputs.deployer-pk }} \
+          --private-key ${{ inputs.owner-pk || inputs.deployer-pk }} \
           --gas-price 100gwei \
-          --rpc-url ${{ inputs.rpc-url }}
+          --rpc-url ${{ inputs.rpc-url }} \
           --json)
-        echo "transaction-receipt=$(tx_receipt)" >> $GITHUB_OUTPUT
+        echo "transaction-receipt=${tx_receipt}" >> $GITHUB_OUTPUT
       shell: bash
     - name: Set outputs
       id: summary
