@@ -71,7 +71,7 @@ jobs:
         with:
           implementation-contract-name: 'NewImplementationContractName'
           proxy-contract-address: ${{ steps.deploy.outputs.proxy-contract-address }}
-          call-args: ''
+          call-args: '"doSomething(address,uint) "0x..." 12'
           parent-dir: './path/to/contracts'
           deployer-pk: ${{ secrets.DEPLOYER_PK }}
           chain-id: '11155111'

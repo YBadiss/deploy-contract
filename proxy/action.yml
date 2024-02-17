@@ -49,16 +49,16 @@ inputs:
 outputs:
   implementation-contract-address:
     description: "Address of the implementation contract"
-    value: ${{ fromJson(steps.deploy.outputs.deploymentOutput).deployedTo }}
+    value: ${{ steps.summary.outputs.implementation-contract-address }}
   implementation-transaction-hash:
     description: "Hash of the transaction of the implementation contract's deployment"
-    value: ${{ fromJson(steps.deploy.outputs.deploymentOutput).transactionHash }}
+    value: ${{ steps.summary.outputs.implementation-transaction-hash }}
   proxy-contract-address:
     description: "Address of the proxy contract"
-    value: ${{ fromJson(steps.deploy.outputs.deploymentOutput).transactionHash }}
+    value: ${{ steps.summary.outputs.proxy-contract-address }}
   proxy-transaction-hash:
     description: "Hash of the transaction of the implementation upgrade call"
-    value: ${{ fromJson(steps.deploy.outputs.deploymentOutput).transactionHash }}
+    value: ${{ steps.summary.outputs.proxy-transaction-hash }}
 
 
 runs:
@@ -75,7 +75,7 @@ runs:
       uses: foundry-rs/foundry-toolchain@v1
     - name: ABI encode the call args
       id: encode
-      run: echo "call-args=$(cast abi-encode ${{ inputs.call-args }})" >> $GITHUB_OUTPUT
+      run: echo "call-args=$(cast calldata ${{ inputs.call-args }})" >> $GITHUB_OUTPUT
       shell: bash
     - name: Deploy implementation contract
       uses: YBadiss/deploy-contract@main
@@ -96,7 +96,7 @@ runs:
       with:
         contract-name: ${{ inputs.proxy-contract-name }}
         parent-dir: ${{ inputs.parent-dir }}
-        constructor-args: '${{ steps.deploy-implementation.outputs.contract-address }} ${{ steps.encode.outputs.call-args }}'
+        constructor-args: '${{ steps.deploy-implementation.outputs.contract-address }} \"${{ steps.encode.outputs.call-args }}\"'
         deployer-pk: ${{ inputs.deployer-pk }}
         chain-id: ${{ inputs.chain-id }}
         rpc-url: ${{ inputs.rpc-url }}
@@ -119,6 +119,7 @@ runs:
         echo "transaction-receipt=$(tx_receipt)" >> $GITHUB_OUTPUT
       shell: bash
     - name: Set outputs
+      id: summary
       run: |
         echo "implementation-contract-address=${{ steps.deploy-implementation.outputs.contract-address }}" >> $GITHUB_OUTPUT
         echo "implementation-transaction-hash=${{ steps.deploy-implementation.outputs.transaction-hash }}" >> $GITHUB_OUTPUT

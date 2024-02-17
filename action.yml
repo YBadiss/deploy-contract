@@ -41,10 +41,10 @@ inputs:
 outputs:
   contract-address:
     description: "Address the contract was deployed to"
-    value: ${{ fromJson(steps.deploy.outputs.deploymentOutput).deployedTo }}
+    value: ${{ steps.summary.outputs.deployedTo }}
   transaction-hash:
     description: "Hash of the deployment transaction"
-    value: ${{ fromJson(steps.deploy.outputs.deploymentOutput).transactionHash }}
+    value: ${{ steps.summary.outputs.transactionHash }}
 
 
 runs:
@@ -80,22 +80,26 @@ runs:
         if [[ "${{ inputs.constructor-args }}" != "" ]]; then
           createArguments="${createArguments} --constructor-args ${{ inputs.constructor-args }}"
         fi
-        createOutput=`forge create ${createArguments}`
+        createOutput=$(eval "forge create ${createArguments}")
         echo "forge create output:\n\n${createOutput}"
         deploymentOutput=`echo "${createOutput}" | head -1`
-        echo "deploymentOutput=$deploymentOutput" >> $GITHUB_OUTPUT
+        echo "deploymentOutput=${deploymentOutput}" >> $GITHUB_OUTPUT
       shell: bash
     - name: Upload ABI artifact
       uses: actions/upload-artifact@v3
       with:
         name: ${{ inputs.contract-name }}.abi.json
         path: ${{ inputs.parent-dir }}/out/${{ inputs.contract-name }}.sol/${{ inputs.contract-name }}.json
-    - name: Log detail of deployment
+    - name: Log summary of deployment
+      id: summary
       run: |
         echo "# Contract ${{ inputs.contract-name }} deployed :rocket:" >> $GITHUB_STEP_SUMMARY
         deployer="${{ fromJson(steps.deploy.outputs.deploymentOutput).deployer }}"
+        echo "deployer=${deployer}" >> $GITHUB_OUTPUT
         deployedTo="${{ fromJson(steps.deploy.outputs.deploymentOutput).deployedTo }}"
+        echo "deployedTo=${deployedTo}" >> $GITHUB_OUTPUT
         transactionHash="${{ fromJson(steps.deploy.outputs.deploymentOutput).transactionHash }}"
+        echo "transactionHash=${transactionHash}" >> $GITHUB_OUTPUT
         if [[ "${{ inputs.etherscan-url }}" != "" ]]; then
           deployer="[${deployer}}](${{ inputs.etherscan-url }}/address/${deployer})"
           deployedTo="[${deployedTo}](${{ inputs.etherscan-url }}/address/${deployedTo})"
